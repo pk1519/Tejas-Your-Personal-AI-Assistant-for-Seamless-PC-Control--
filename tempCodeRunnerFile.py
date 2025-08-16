@@ -1,24 +1,20 @@
-# main.py
 import sys
 from PyQt5.QtWidgets import QApplication
 from robot_overlay import RobotOverlay
-from dashboard import Dashboard
-from PyQt5.QtCore import QTimer
-from ai_core import handle_task  # Import AI core handler
+from dashboard import GlassDashboard  # Correct import
 
-def show_dashboard_near_robot(robot: RobotOverlay, dashboard: Dashboard):
-    # Position dashboard to the left of robot if possible, otherwise right
+from PyQt5.QtCore import QTimer
+from ai_core import handle_task, llm_fallback
+
+def show_dashboard_near_robot(robot: RobotOverlay, dashboard: GlassDashboard):  # Update type hint
     r = robot.geometry()
     screen = QApplication.primaryScreen().availableGeometry()
     preferred_x = r.x() - dashboard.width() - 12
     if preferred_x < screen.x():
         preferred_x = r.x() + r.width() + 12
     preferred_y = r.y() + (r.height() - dashboard.height()) // 2
-
-    # Clamp inside screen
     preferred_x = max(screen.x(), min(preferred_x, screen.x() + screen.width() - dashboard.width()))
     preferred_y = max(screen.y(), min(preferred_y, screen.y() + screen.height() - dashboard.height()))
-
     dashboard.move(preferred_x, preferred_y)
     dashboard.show()
     dashboard.raise_()
@@ -27,16 +23,11 @@ def show_dashboard_near_robot(robot: RobotOverlay, dashboard: Dashboard):
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     robot = RobotOverlay()
-    dashboard = Dashboard()
+    dashboard = GlassDashboard()  # Instantiate the correct class
 
-    # Connect the robot icon click to open dashboard
+    # Connect robot click to open dashboard
     robot.showDashboard.connect(lambda: show_dashboard_near_robot(robot, dashboard))
-
-    # Connect dashboard AI controls
-    dashboard.voiceButtonClicked.connect(lambda: handle_task())  # Voice input
-    dashboard.textSubmitted.connect(lambda text: handle_task(text))  # Typed input
 
     # Show robot widget
     robot.show()
-
     sys.exit(app.exec_())
