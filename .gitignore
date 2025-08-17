@@ -54,3 +54,8 @@ reminders.json
 *.bak
 *.backup
 *~
+
+# Never commit secrets
+config.py
+user_token.json
+*.json
