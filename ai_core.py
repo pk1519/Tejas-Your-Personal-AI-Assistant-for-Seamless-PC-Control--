@@ -196,6 +196,59 @@ class AICore:
             }
         }
 
+    def _bytes_to_readable(self, bytes_value):
+        """Convert bytes to human readable format"""
+        for unit in ['B', 'KB', 'MB', 'GB', 'TB']:
+            if bytes_value < 1024.0:
+                return f"{bytes_value:.1f} {unit}"
+            bytes_value /= 1024.0
+        return f"{bytes_value:.1f} PB"
+
+    def _bytes_to_gb(self, bytes_value):
+        """Convert bytes to GB"""
+        return bytes_value / (1024 ** 3)
+
+    def get_weather(self):
+        """Get weather information"""
+        try:
+            return "🌤️ Weather service is currently unavailable. Please check your local weather app or website."
+        except Exception as e:
+            return f"❌ Unable to get weather information: {str(e)}"
+
+    def _extract_folder_name(self, user_input):
+        """Extract folder name from user input"""
+        words = user_input.split()
+        # Find words after 'folder' or 'directory'
+        try:
+            if 'folder' in words:
+                idx = words.index('folder')
+                if idx + 1 < len(words):
+                    return ' '.join(words[idx + 1:])
+            elif 'directory' in words:
+                idx = words.index('directory')
+                if idx + 1 < len(words):
+                    return ' '.join(words[idx + 1:])
+        except:
+            pass
+        return "new_folder"
+
+    def _extract_search_query(self, user_input):
+        """Extract search query from user input"""
+        words_to_remove = ['google', 'search', 'for', 'please', 'can', 'you']
+        words = user_input.split()
+        filtered_words = [word for word in words if word not in words_to_remove]
+        return ' '.join(filtered_words) if filtered_words else "search query"
+
+    def _extract_url(self, user_input):
+        """Extract URL from user input"""
+        words = user_input.split()
+        # Look for words that might be URLs
+        for word in words:
+            if '.' in word and not word.startswith('.'):
+                return word
+        # If no URL found, return a default
+        return "google.com"
+
     # File Management Methods
     def list_files(self, path=None):
         """List files in directory"""
@@ -359,8 +412,6 @@ class AICore:
             return f"📅 Current date: {current_date}"
         except Exception as e:
             return f"❌ Unable to get date: {str(e)}"
-    
-    # Weather Method
     
     def _load_common_tasks(self):
         """Load common computer tasks and their implementations"""
@@ -540,6 +591,9 @@ class AICore:
     
     def _find_and_run_from_registry(self, app_info):
         """Find application from Windows registry"""
+        if self.system != "Windows":
+            return False
+            
         import winreg
         
         registry_paths = [
@@ -903,5 +957,94 @@ Just tell me what you'd like to do in plain English!
             return "🔊 Volume unmuted"
         except:
             return "❌ Unable to unmute volume"
+
+
+# =============================================================================
+# STANDALONE FUNCTIONS FOR DASHBOARD COMPATIBILITY
+# =============================================================================
+
+import speech_recognition as sr
+import pyttsx3
+
+# Create a global AI core instance
+_ai_core_instance = AICore()
+
+def handle_task(user_input, llm_fallback_func=None):
+    """
+    Main function to handle user tasks - wrapper around AICore.process_command
+    """
+    try:
+        return _ai_core_instance.process_command(user_input)
+    except Exception as e:
+        if llm_fallback_func:
+            try:
+                return llm_fallback_func(user_input)
+            except:
+                return f"Sorry, I encountered an error: {str(e)}"
+        return f"Sorry, I encountered an error: {str(e)}"
+
+def llm_fallback(user_input):
+    """
+    Fallback function when main AI processing fails
+    """
+    # Basic conversational responses as fallback
+    user_input_lower = user_input.lower().strip()
     
-    #
+    if any(greeting in user_input_lower for greeting in ['hello', 'hi', 'hey']):
+        return "Hello! I'm your AI assistant. How can I help you today?"
+    elif any(thanks in user_input_lower for thanks in ['thank', 'thanks']):
+        return "You're welcome! Is there anything else I can help you with?"
+    elif any(goodbye in user_input_lower for goodbye in ['bye', 'goodbye', 'see you']):
+        return "Goodbye! Have a great day!"
+    elif 'help' in user_input_lower:
+        return "I can help you with opening applications, system information, file management, web searches, and more. What would you like me to do?"
+    else:
+        return "I understand you want help with something. Could you please be more specific about what you'd like me to do?"
+
+def recognize_voice(duration=5):
+    """
+    Recognize speech from microphone
+    """
+    try:
+        # Initialize recognizer
+        recognizer = sr.Recognizer()
+        
+        # Use microphone as source
+        with sr.Microphone() as source:
+            print("🎤 Listening...")
+            # Adjust for ambient noise
+            recognizer.adjust_for_ambient_noise(source, duration=0.5)
+            # Listen for audio with timeout
+            audio = recognizer.listen(source, timeout=duration, phrase_time_limit=duration)
+        
+        print("🔄 Processing speech...")
+        # Use Google's speech recognition
+        text = recognizer.recognize_google(audio)
+        print(f"✅ Recognized: {text}")
+        return text
+        
+    except sr.UnknownValueError:
+        print("❌ Could not understand the audio")
+        return None
+    except sr.RequestError as e:
+        print(f"❌ Error with speech recognition service: {e}")
+        return None
+    except sr.WaitTimeoutError:
+        print("❌ No speech detected within timeout period")
+        return None
+    except Exception as e:
+        print(f"❌ Unexpected error in speech recognition: {e}")
+        return None
+
+def get_network_info():
+    """
+    Get network information - wrapper around AICore method
+    """
+    return _ai_core_instance.get_network_info()
+
+# Additional utility function that might be helpful
+def get_weather(city=None):
+    """
+    Get weather information - wrapper around AICore method
+    """
+    return _ai_core_instance.get_weather()
