@@ -229,7 +229,15 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [ ] **Cloud Sync**: Cross-device data synchronization
 - [ ] **API Integration**: RESTful API for external services
 
+## 🥃 Screenshot 
+<img width="449" height="594" alt="image" src="https://github.com/user-attachments/assets/fffe701c-4c5d-4854-8536-6bd76f988a16" />
+<img width="1919" height="965" alt="Screenshot 2025-08-17 221639" src="https://github.com/user-attachments/assets/de9e5827-e685-4710-9d49-a47472105341" />
+<img width="1905" height="972" alt="image" src="https://github.com/user-attachments/assets/7468eef9-1929-420a-a247-3a116b5389ae" />
+<img width="1912" height="972" alt="image" src="https://github.com/user-attachments/assets/df3e5c8b-8ef8-4a21-9632-25c5e8bd3cdb" />
+
 ---
+## Contact me
+priyanshu345kumar@gmail.com
 
 **Made with ❤️ by the Tejas AI Team**
 
