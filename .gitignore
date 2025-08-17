@@ -1,3 +1,56 @@
+# Environment and configuration files
+.env
+*.env
 key.env
-key.env
-key.env
+config.py
+config_local.py
+
+# User data and authentication
+user_data.json
+user_token.json
+auth_tokens.json
+*.json.bak
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Python cache and virtual environments
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+env/
+ENV/
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Logs and temporary files
+*.log
+*.tmp
+tempCodeRunnerFile.py
+*.zip
+
+# Voice models (large files)
+vosk-model-small-en-us-0.15/
+*.model
+
+# Personal settings
+ui_settings.json
+reminders.json
+
+# Backup files
+*.bak
+*.backup
+*~
