@@ -732,20 +732,14 @@ class AICore:
     
     def _handle_model_commands(self, user_input):
         """Handle model-related commands"""
+        if not MODEL_MANAGER_AVAILABLE:
+            return "🌍 **Cloud Environment Detected**\n\nSpeech recognition models are not available in Streamlit Cloud.\nFor full functionality including voice recognition, please run locally:\n\n```bash\npip install -r requirements-local.txt\nstreamlit run app.py\n```\n\n💡 **Cloud Features Available:**\n• Full chat interface\n• System monitoring\n• File management\n• Web searches\n• Application launching"
+        
         if any(keyword in user_input for keyword in ['show', 'list', 'display', 'info', 'information']):
-            # Import here to avoid circular imports
-            try:
-                from model_manager import get_model_information
-                return get_model_information()
-            except ImportError:
-                return "❌ Model manager not available. Please install required dependencies."
+            return get_model_information()
         
         elif any(keyword in user_input for keyword in ['refresh', 'update', 'rescan', 'reload']):
-            try:
-                from model_manager import refresh_models
-                return refresh_models()
-            except ImportError:
-                return "❌ Model manager not available. Please install required dependencies."
+            return refresh_models()
         
         else:
             return "🤖 I can help you with speech recognition models. Ask me to 'show model information' or 'refresh models'."
@@ -1002,19 +996,21 @@ try:
 except ImportError:
     TTS_AVAILABLE = False
 
-# Import model manager
+# Import model manager (with better error handling for cloud)
 try:
     from model_manager import ModelManager, scan_and_select_model
     MODEL_MANAGER_AVAILABLE = True
-except ImportError:
+except (ImportError, ModuleNotFoundError, Exception) as e:
     MODEL_MANAGER_AVAILABLE = False
+    print(f"Model manager not available: {e}")
     
 # Try to import Vosk for offline speech recognition
 try:
     import vosk
     VOSK_AVAILABLE = True
-except ImportError:
+except (ImportError, ModuleNotFoundError) as e:
     VOSK_AVAILABLE = False
+    print(f"Vosk not available: {e}")
 
 # Create a global AI core instance
 _ai_core_instance = AICore()
@@ -1076,6 +1072,9 @@ def _recognize_voice_vosk(duration=5):
     """
     if not VOSK_AVAILABLE:
         raise Exception("Vosk library not available - install with: pip install vosk")
+    
+    if not MODEL_MANAGER_AVAILABLE:
+        raise Exception("Model manager not available in this environment")
     
     try:
         # Get the best available model
