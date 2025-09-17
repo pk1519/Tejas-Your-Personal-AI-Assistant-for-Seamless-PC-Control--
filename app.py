@@ -1,12 +1,26 @@
 import streamlit as st
 import os
 import json
-import pyttsx3
 import threading
 from datetime import datetime, timedelta
-from ai_core import handle_task, llm_fallback, recognize_voice
 import time
 import psutil
+
+# Import AI core functions
+from ai_core import handle_task, llm_fallback
+
+# Try to import optional audio dependencies
+try:
+    import pyttsx3
+    TTS_AVAILABLE = True
+except ImportError:
+    TTS_AVAILABLE = False
+
+try:
+    from ai_core import recognize_voice
+    SPEECH_RECOGNITION_AVAILABLE = True
+except ImportError:
+    SPEECH_RECOGNITION_AVAILABLE = False
 
 # Configure Streamlit page
 st.set_page_config(
@@ -92,8 +106,8 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 def speak_text(text):
-    """Convert text to speech using pyttsx3"""
-    if st.session_state.enable_speech_output and text:
+    """Convert text to speech using pyttsx3 (when available)"""
+    if st.session_state.enable_speech_output and text and TTS_AVAILABLE:
         try:
             def speak():
                 engine = pyttsx3.init()
@@ -103,7 +117,9 @@ def speak_text(text):
             # Run TTS in a separate thread to avoid blocking
             threading.Thread(target=speak, daemon=True).start()
         except Exception as e:
-            st.error(f"Speech error: {e}")
+            st.warning(f"Speech synthesis not available in cloud environment: {str(e)}")
+    elif st.session_state.enable_speech_output and not TTS_AVAILABLE:
+        st.info("💡 Voice output is not available in cloud deployment. It works when running locally!")
 
 def add_message_to_chat(role, content):
     """Add a message to chat history"""
@@ -137,7 +153,17 @@ def get_system_metrics():
     try:
         cpu_percent = psutil.cpu_percent(interval=1)
         memory = psutil.virtual_memory()
-        disk = psutil.disk_usage('/')
+        
+        # Handle disk usage for different operating systems
+        try:
+            import platform
+            if platform.system() == 'Windows':
+                disk = psutil.disk_usage('C:\\')
+            else:
+                disk = psutil.disk_usage('/')
+        except:
+            # Fallback for cloud environments
+            disk = psutil.disk_usage('.')
         
         return {
             'cpu': cpu_percent,
@@ -149,8 +175,16 @@ def get_system_metrics():
             'disk_total': disk.total / (1024**3)
         }
     except Exception as e:
-        st.error(f"Error getting system metrics: {e}")
-        return None
+        st.warning(f"Some system metrics may not be available in cloud environment: {e}")
+        return {
+            'cpu': 0,
+            'memory': 0,
+            'disk': 0,
+            'memory_used': 0,
+            'memory_total': 0,
+            'disk_used': 0,
+            'disk_total': 0
+        }
 
 def main():
     # Header
@@ -167,10 +201,14 @@ def main():
         
         # Voice settings
         st.subheader("🔊 Voice Settings")
-        st.session_state.enable_speech_output = st.checkbox(
-            "Enable Voice Output",
-            value=st.session_state.enable_speech_output
-        )
+        if TTS_AVAILABLE:
+            st.session_state.enable_speech_output = st.checkbox(
+                "Enable Voice Output",
+                value=st.session_state.enable_speech_output
+            )
+        else:
+            st.info("💡 Voice features work when running locally but are disabled in cloud deployment")
+            st.session_state.enable_speech_output = False
         
         # System metrics
         st.subheader("⚡ System Metrics")
@@ -198,6 +236,26 @@ def main():
             if st.button("🌐 Network Info"):
                 ai_response = handle_task("show network information", llm_fallback_func=llm_fallback)
                 add_message_to_chat('user', 'Show network information')
+                add_message_to_chat('ai', ai_response)
+                speak_text(ai_response)
+                st.rerun()
+        
+        # Model information section
+        st.subheader("🤖 Speech Models")
+        col3, col4 = st.columns(2)
+        
+        with col3:
+            if st.button("📋 Show Models"):
+                ai_response = handle_task("show model information", llm_fallback_func=llm_fallback)
+                add_message_to_chat('user', 'Show model information')
+                add_message_to_chat('ai', ai_response)
+                speak_text(ai_response)
+                st.rerun()
+        
+        with col4:
+            if st.button("🔄 Refresh Models"):
+                ai_response = handle_task("refresh models", llm_fallback_func=llm_fallback)
+                add_message_to_chat('user', 'Refresh models')
                 add_message_to_chat('ai', ai_response)
                 speak_text(ai_response)
                 st.rerun()
@@ -251,24 +309,24 @@ def main():
                 st.rerun()
         
         with col_voice:
-            if st.button("🎤 Voice Input"):
-                st.info("🎤 Listening... Speak now!")
-                
-                # Placeholder for voice input (requires additional setup)
-                try:
-                    # Note: Voice recognition might not work well in Streamlit environment
-                    # This is a placeholder for future implementation
-                    voice_text = recognize_voice(duration=5)
-                    if voice_text:
-                        add_message_to_chat('user', f"🗣️ {voice_text}")
-                        ai_response = handle_task(voice_text, llm_fallback_func=llm_fallback)
-                        add_message_to_chat('ai', ai_response)
-                        speak_text(ai_response)
-                        st.rerun()
-                    else:
-                        st.warning("⚠️ No speech detected. Please try again.")
-                except Exception as e:
-                    st.error(f"❌ Voice recognition error: {str(e)}")
+            if SPEECH_RECOGNITION_AVAILABLE:
+                if st.button("🎤 Voice Input"):
+                    st.info("🎤 Listening... Speak now!")
+                    
+                    try:
+                        voice_text = recognize_voice(duration=5)
+                        if voice_text:
+                            add_message_to_chat('user', f"🗣️ {voice_text}")
+                            ai_response = handle_task(voice_text, llm_fallback_func=llm_fallback)
+                            add_message_to_chat('ai', ai_response)
+                            speak_text(ai_response)
+                            st.rerun()
+                        else:
+                            st.warning("⚠️ No speech detected. Please try again.")
+                    except Exception as e:
+                        st.error(f"❌ Voice recognition error: {str(e)}")
+            else:
+                st.button("🎤 Voice Input (Local Only)", disabled=True, help="Voice input is only available when running locally")
     
     with col2:
         # Tools panel

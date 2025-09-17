@@ -494,6 +494,10 @@ class AICore:
             elif 'screenshot' in user_input:
                 response = self.take_screenshot()
             
+            # Check for model-related commands
+            elif any(keyword in user_input for keyword in ['model', 'speech recognition', 'voice model']):
+                response = self._handle_model_commands(user_input)
+            
             # Basic conversational responses
             else:
                 response = self._handle_conversation(user_input)
@@ -725,6 +729,26 @@ class AICore:
     def _handle_weather(self, user_input):
         """Handle weather requests"""
         return self.get_weather()
+    
+    def _handle_model_commands(self, user_input):
+        """Handle model-related commands"""
+        if any(keyword in user_input for keyword in ['show', 'list', 'display', 'info', 'information']):
+            # Import here to avoid circular imports
+            try:
+                from model_manager import get_model_information
+                return get_model_information()
+            except ImportError:
+                return "❌ Model manager not available. Please install required dependencies."
+        
+        elif any(keyword in user_input for keyword in ['refresh', 'update', 'rescan', 'reload']):
+            try:
+                from model_manager import refresh_models
+                return refresh_models()
+            except ImportError:
+                return "❌ Model manager not available. Please install required dependencies."
+        
+        else:
+            return "🤖 I can help you with speech recognition models. Ask me to 'show model information' or 'refresh models'."
     
     def _handle_conversation(self, user_input):
         """Handle basic conversation"""
@@ -965,8 +989,32 @@ Just tell me what you'd like to do in plain English!
 # STANDALONE FUNCTIONS FOR DASHBOARD COMPATIBILITY
 # =============================================================================
 
-import speech_recognition as sr
-import pyttsx3
+# Try to import optional audio dependencies
+try:
+    import speech_recognition as sr
+    SPEECH_RECOGNITION_AVAILABLE = True
+except ImportError:
+    SPEECH_RECOGNITION_AVAILABLE = False
+
+try:
+    import pyttsx3
+    TTS_AVAILABLE = True
+except ImportError:
+    TTS_AVAILABLE = False
+
+# Import model manager
+try:
+    from model_manager import ModelManager, scan_and_select_model
+    MODEL_MANAGER_AVAILABLE = True
+except ImportError:
+    MODEL_MANAGER_AVAILABLE = False
+    
+# Try to import Vosk for offline speech recognition
+try:
+    import vosk
+    VOSK_AVAILABLE = True
+except ImportError:
+    VOSK_AVAILABLE = False
 
 # Create a global AI core instance
 _ai_core_instance = AICore()
@@ -1005,8 +1053,107 @@ def llm_fallback(user_input):
 
 def recognize_voice(duration=5):
     """
-    Recognize speech from microphone
-    Note: Voice recognition may have limited functionality in Streamlit Cloud deployment
+    Enhanced speech recognition with automatic model selection
+    Supports multiple recognition engines: Vosk (offline), Google (online), etc.
+    """
+    if not SPEECH_RECOGNITION_AVAILABLE:
+        print("❌ Speech recognition not available in cloud environment")
+        return None
+    
+    # Try offline recognition first (Vosk)
+    if VOSK_AVAILABLE and MODEL_MANAGER_AVAILABLE:
+        try:
+            return _recognize_voice_vosk(duration)
+        except Exception as e:
+            print(f"⚠️ Offline recognition failed: {e}. Falling back to online...")
+    
+    # Fallback to online recognition
+    return _recognize_voice_online(duration)
+
+def _recognize_voice_vosk(duration=5):
+    """
+    Recognize speech using Vosk offline model
+    """
+    try:
+        # Get the best available model
+        model_manager = ModelManager()
+        models = model_manager.scan_models()
+        best_model = model_manager.select_best_model()
+        
+        if not best_model:
+            raise Exception("No suitable Vosk model found")
+        
+        model_path = best_model['path']
+        print(f"🤖 Using model: {best_model['type']} - {model_path}")
+        
+        # Extract model if it's a zip file
+        if model_path.endswith('.zip'):
+            import zipfile
+            extract_dir = model_path.replace('.zip', '')
+            if not os.path.exists(extract_dir):
+                print("📦 Extracting model...")
+                with zipfile.ZipFile(model_path, 'r') as zip_ref:
+                    zip_ref.extractall(os.path.dirname(model_path))
+            model_path = extract_dir
+        
+        # Initialize Vosk model
+        if not os.path.exists(model_path):
+            raise Exception(f"Model path does not exist: {model_path}")
+        
+        vosk_model = vosk.Model(model_path)
+        recognizer = vosk.KaldiRecognizer(vosk_model, 16000)
+        
+        # Initialize microphone
+        import pyaudio
+        p = pyaudio.PyAudio()
+        stream = p.open(
+            format=pyaudio.paInt16,
+            channels=1,
+            rate=16000,
+            input=True,
+            frames_per_buffer=8192
+        )
+        
+        print("🎤 Listening (offline)...")
+        stream.start_stream()
+        
+        # Listen for specified duration
+        import time
+        start_time = time.time()
+        results = []
+        
+        while time.time() - start_time < duration:
+            data = stream.read(4096, exception_on_overflow=False)
+            if recognizer.AcceptWaveform(data):
+                result = json.loads(recognizer.Result())
+                if result.get('text'):
+                    results.append(result['text'])
+        
+        # Get final result
+        final_result = json.loads(recognizer.FinalResult())
+        if final_result.get('text'):
+            results.append(final_result['text'])
+        
+        stream.stop_stream()
+        stream.close()
+        p.terminate()
+        
+        # Combine results
+        text = ' '.join(results).strip()
+        if text:
+            print(f"✅ Recognized (offline): {text}")
+            return text
+        else:
+            print("❌ No speech detected (offline)")
+            return None
+            
+    except Exception as e:
+        print(f"❌ Vosk recognition error: {e}")
+        raise e
+
+def _recognize_voice_online(duration=5):
+    """
+    Recognize speech using online services (Google, etc.)
     """
     try:
         # Initialize recognizer
@@ -1014,29 +1161,44 @@ def recognize_voice(duration=5):
         
         # Use microphone as source
         with sr.Microphone() as source:
-            print("🎤 Listening...")
+            print("🎤 Listening (online)...")
             # Adjust for ambient noise
             recognizer.adjust_for_ambient_noise(source, duration=0.5)
             # Listen for audio with timeout
             audio = recognizer.listen(source, timeout=duration, phrase_time_limit=duration)
         
         print("🔄 Processing speech...")
-        # Use Google's speech recognition
-        text = recognizer.recognize_google(audio)
-        print(f"✅ Recognized: {text}")
-        return text
+        # Try multiple recognition services
+        text = None
         
-    except sr.UnknownValueError:
-        print("❌ Could not understand the audio")
+        # Try Google first
+        try:
+            text = recognizer.recognize_google(audio)
+            print(f"✅ Recognized (Google): {text}")
+            return text
+        except sr.RequestError:
+            print("⚠️ Google recognition service unavailable")
+        except sr.UnknownValueError:
+            print("⚠️ Google could not understand the audio")
+        
+        # Try Sphinx as fallback (offline)
+        try:
+            text = recognizer.recognize_sphinx(audio)
+            print(f"✅ Recognized (Sphinx): {text}")
+            return text
+        except sr.RequestError:
+            print("⚠️ Sphinx recognition not available")
+        except sr.UnknownValueError:
+            print("⚠️ Sphinx could not understand the audio")
+        
+        print("❌ Could not understand the audio with any service")
         return None
-    except sr.RequestError as e:
-        print(f"❌ Error with speech recognition service: {e}")
-        return None
+        
     except sr.WaitTimeoutError:
         print("❌ No speech detected within timeout period")
         return None
     except Exception as e:
-        print(f"❌ Unexpected error in speech recognition: {e}")
+        print(f"❌ Unexpected error in online speech recognition: {e}")
         return None
 
 def get_network_info():
@@ -1051,3 +1213,81 @@ def get_weather(city=None):
     Get weather information - wrapper around AICore method
     """
     return _ai_core_instance.get_weather()
+
+def get_model_information():
+    """
+    Get information about available speech recognition models
+    """
+    if not MODEL_MANAGER_AVAILABLE:
+        return "❌ Model manager not available. Install required dependencies."
+    
+    try:
+        model_manager = ModelManager()
+        models = model_manager.scan_models()
+        model_info = model_manager.get_model_info()
+        
+        if not models:
+            return "❌ No speech recognition models found. Please add models to the project directory."
+        
+        result = "🤖 **Available Speech Recognition Models:**\n\n"
+        
+        # Show selected model first
+        if model_info['selected_model']:
+            selected = model_info['selected_model']
+            result += f"**🎯 Currently Selected Model:**\n"
+            result += f"• Type: {selected['type'].upper()}\n"
+            result += f"• Path: {selected['path']}\n"
+            result += f"• Size: {model_manager._format_size(selected['size'])}\n"
+            result += f"• Score: {selected['score']:.1f}\n"
+            if 'accuracy' in selected:
+                result += f"• Accuracy: {selected['accuracy']}\n"
+            result += f"• Status: {'Ready' if selected['is_extracted'] else 'Needs Extraction'}\n\n"
+        
+        # Show all available models
+        result += f"**📋 All Available Models ({model_info['total_models']} found):**\n"
+        
+        # Sort models by score
+        sorted_models = sorted(
+            model_info['models'].items(),
+            key=lambda x: x[1]['score'],
+            reverse=True
+        )
+        
+        for i, (model_key, model) in enumerate(sorted_models):
+            status_emoji = "✅" if model['is_extracted'] else "📦"
+            result += f"{status_emoji} **{model_key}**\n"
+            result += f"   Type: {model['type']} | Size: {model_manager._format_size(model['size'])} | Score: {model['score']:.1f}\n"
+            if 'accuracy' in model:
+                result += f"   Accuracy: {model['accuracy']}\n"
+            result += f"   Path: {model['path']}\n\n"
+        
+        result += "\n💡 **Tips:**\n"
+        result += "• Larger models generally provide better accuracy\n"
+        result += "• Extracted models (✅) are ready to use\n"
+        result += "• Packaged models (📦) will be extracted automatically when needed\n"
+        result += "• The system automatically selects the best available model\n"
+        
+        return result
+        
+    except Exception as e:
+        return f"❌ Error getting model information: {str(e)}"
+
+def refresh_models():
+    """
+    Force refresh of available models (clear cache and rescan)
+    """
+    if not MODEL_MANAGER_AVAILABLE:
+        return "❌ Model manager not available"
+    
+    try:
+        model_manager = ModelManager()
+        models = model_manager.scan_models(force_rescan=True)
+        best_model = model_manager.select_best_model()
+        
+        if best_model:
+            return f"🔄 Models refreshed! Found {len(models)} models. Best model: {best_model['type']} ({model_manager._format_size(best_model['size'])})"
+        else:
+            return f"🔄 Models refreshed! Found {len(models)} models, but none are suitable for use."
+            
+    except Exception as e:
+        return f"❌ Error refreshing models: {str(e)}"

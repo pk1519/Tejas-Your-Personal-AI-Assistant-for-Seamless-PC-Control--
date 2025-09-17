@@ -12,7 +12,7 @@
 ### 💬 **Interactive Web Interface**
 - **Streamlit-powered UI**: Modern, responsive web interface accessible from any browser
 - **Real-time Chat Interface**: Conversational AI interaction with persistent chat history
-- **Voice Integration**: Optional text-to-speech output for responses
+- **Advanced Voice Integration**: Multi-engine speech recognition with automatic model selection
 - **Cross-platform Compatibility**: Runs on Windows, macOS, and Linux
 
 ### ⚙️ **Comprehensive System Control**
@@ -32,7 +32,14 @@
 - **File Management**: Create folders, list directories, and manage files
 - **Quick Actions**: One-click access to common system tasks
 
-### 🎨 **Modern User Experience**
+### 🤖 **Intelligent Speech Recognition**
+- **Automatic Model Selection**: Scans and selects the best available speech recognition model
+- **Multi-Engine Support**: Vosk (offline), Google Speech API, Sphinx fallback
+- **Model Management**: Real-time model information and performance metrics
+- **Offline Capability**: Works without internet using local Vosk models
+- **Performance Optimization**: Automatic model scoring and selection based on accuracy and size
+
+### 👨‍🎨 **Modern User Experience**
 - **Streamlit Interface**: Clean, modern web-based user interface
 - **Responsive Design**: Works seamlessly on desktop and mobile browsers
 - **Real-time Updates**: Live system metrics and interactive feedback
@@ -85,6 +92,7 @@ streamlit run app.py
 - **File Management**: "List files" or "Create folder MyProject"
 - **Web Search**: "Search for Python tutorials"
 - **App Launch**: "Open Notepad" or "Launch Chrome"
+- **Speech Models**: "Show model information" or "Refresh models"
 
 ## 📖 Usage Examples
 
@@ -110,6 +118,11 @@ streamlit run app.py
 "Save note: Meeting with team at 3 PM"
 "Show my saved notes"
 "Set reminder for tomorrow 9 AM"
+
+# Speech Recognition
+"Show model information"
+"Refresh speech models"
+"Which voice model are you using?"
 ```
 
 ### **Text Input**
@@ -122,6 +135,7 @@ streamlit run app.py
 ### **Core Components**
 - **`app.py`**: Main Streamlit application and user interface
 - **`ai_core.py`**: AI processing and command interpretation engine
+- **`model_manager.py`**: Intelligent speech model scanning and selection system
 - **`requirements.txt`**: Python dependencies and packages
 - **`.streamlit/config.toml`**: Streamlit configuration settings
 
@@ -129,7 +143,9 @@ streamlit run app.py
 - **Frontend**: Streamlit web framework with custom CSS styling
 - **AI Engine**: Natural language processing and task automation
 - **System Integration**: Cross-platform system monitoring via psutil
-- **Voice Processing**: Optional text-to-speech using pyttsx3
+- **Speech Recognition**: Multi-engine support (Vosk, Google API, Sphinx)
+- **Model Management**: Automatic scanning, scoring, and selection system
+- **Voice Processing**: Text-to-speech using pyttsx3 with offline capability
 - **State Management**: Streamlit session state for data persistence
 
 ## ⚙️ Configuration

@@ -1,0 +1,55 @@
+{
+  "models": {
+    "vosk_vosk-model-small-en-us-0.15": {
+      "path": "C:\\Users\\priya\\Desktop\\wok\\VS Code\\Tejas\\TejasAi\\vosk-model-small-en-us-0.15.zip",
+      "type": "vosk",
+      "size": 41205931,
+      "hash": "09ab50ccd62b674cbaa231b825f9c1cb",
+      "priority": 90,
+      "description": "Offline speech recognition",
+      "is_extracted": false,
+      "config_files": [],
+      "score": 98.13669166717196
+    },
+    "whisper_language-model.lm": {
+      "path": "C:\\Users\\priya\\Desktop\\wok\\VS Code\\Tejas\\TejasAi\\.venv\\Lib\\site-packages\\speech_recognition\\pocketsphinx-data\\en-US\\language-model.lm.bin",
+      "type": "whisper",
+      "size": 29208442,
+      "hash": "e20b633bc12d427078bcb607f9aa3df5",
+      "priority": 95,
+      "description": "OpenAI Whisper model",
+      "is_extracted": false,
+      "config_files": [],
+      "score": 101.59156390811731
+    },
+    "wav2vec_language-model.lm": {
+      "path": "C:\\Users\\priya\\Desktop\\wok\\VS Code\\Tejas\\TejasAi\\.venv\\Lib\\site-packages\\speech_recognition\\pocketsphinx-data\\en-US\\language-model.lm.bin",
+      "type": "wav2vec",
+      "size": 29208442,
+      "hash": "e20b633bc12d427078bcb607f9aa3df5",
+      "priority": 85,
+      "description": "Facebook wav2vec2 model",
+      "is_extracted": false,
+      "config_files": [],
+      "score": 89.94367293108797
+    },
+    "extracted_vosk-model-small-en-us-0.15": {
+      "path": "C:\\Users\\priya\\Desktop\\wok\\VS Code\\Tejas\\TejasAi\\vosk-model-small-en-us-0.15",
+      "type": "vosk",
+      "size": 70898967,
+      "hash": "09f4413d3ad7074f174d1e323dc035d3",
+      "priority": 90,
+      "description": "Offline speech recognition",
+      "is_extracted": true,
+      "config_files": [
+        "C:\\Users\\priya\\Desktop\\wok\\VS Code\\Tejas\\TejasAi\\vosk-model-small-en-us-0.15\\conf\\model.conf"
+      ],
+      "score": 153.24,
+      "language": "en-US",
+      "accuracy": "10.38 (tedlium test) 9.85 (librispeech test-clean)",
+      "speed": "0.11xRT (desktop)"
+    }
+  },
+  "selected_model": null,
+  "scan_time": "C:\\Users\\priya\\Desktop\\wok\\VS Code\\Tejas\\TejasAi"
+}
