@@ -6,15 +6,8 @@ requests>=2.28.0
 # System and File Management
 pillow>=8.3.0
 
-# Speech Recognition Dependencies
+# Basic speech recognition (cloud compatible)
 speechrecognition>=3.9.0
-pyttsx3>=2.90
-
-# Optional advanced speech recognition
-vosk>=0.3.45
-pyaudio>=0.2.11
-sphinxbase>=0.1.0
-pocketsphinx>=0.1.15
 
 # Data processing for enhanced features
 numpy>=1.21.0

@@ -14,6 +14,21 @@ import hashlib
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# Check for optional dependencies
+try:
+    import vosk
+    VOSK_AVAILABLE = True
+except ImportError:
+    VOSK_AVAILABLE = False
+    logger.warning("Vosk not available - offline speech recognition disabled")
+
+try:
+    import pyaudio
+    PYAUDIO_AVAILABLE = True
+except ImportError:
+    PYAUDIO_AVAILABLE = False
+    logger.warning("PyAudio not available - microphone access limited")
+
 class ModelManager:
     """Manages speech recognition models with automatic scanning and selection"""
     

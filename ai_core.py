@@ -1074,6 +1074,9 @@ def _recognize_voice_vosk(duration=5):
     """
     Recognize speech using Vosk offline model
     """
+    if not VOSK_AVAILABLE:
+        raise Exception("Vosk library not available - install with: pip install vosk")
+    
     try:
         # Get the best available model
         model_manager = ModelManager()
@@ -1219,7 +1222,7 @@ def get_model_information():
     Get information about available speech recognition models
     """
     if not MODEL_MANAGER_AVAILABLE:
-        return "❌ Model manager not available. Install required dependencies."
+        return "❌ Model manager not available. This feature requires local development setup."
     
     try:
         model_manager = ModelManager()
@@ -1227,7 +1230,7 @@ def get_model_information():
         model_info = model_manager.get_model_info()
         
         if not models:
-            return "❌ No speech recognition models found. Please add models to the project directory."
+            return "🌍 **Cloud Environment Detected**\n\nSpeech recognition models are not available in Streamlit Cloud.\nFor full functionality including voice recognition, please run locally:\n\n```bash\npip install -r requirements-local.txt\nstreamlit run app.py\n```\n\n💡 **Cloud Features Available:**\n• Full chat interface\n• System monitoring\n• File management\n• Web searches\n• Application launching"
         
         result = "🤖 **Available Speech Recognition Models:**\n\n"
         
